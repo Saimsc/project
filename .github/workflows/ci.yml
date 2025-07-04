@@ -60,3 +60,11 @@ jobs:
         kubectl port-forward pod/$POD_NAME 8080:8080 &
         sleep 5
         curl http://localhost:8080
+
+    - name: Display Pods and nodes
+      run: |
+        echo "Display deployemnt"
+        kubectl get deployment
+        Kubectl get ns
+        kubectl get nodes
+        kubectl get pods       
