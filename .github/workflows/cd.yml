@@ -46,12 +46,25 @@ jobs:
         kubectl apply -f k8s/deployment.yaml
         kubectl apply -f k8s/service.yaml
         kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/kind/deploy.yaml
-        kubectl wait --namespace ingress-nginx \
-          --for=condition=ready pod \
-          --selector=app.kubernetes.io/component=controller \
-          --timeout=90s
+
+    - name: Wait Until Ingress Controller Is Ready
+      run: |
+        echo "Waiting for ingress-nginx controller to be ready..."
+        for i in {1..30}; do
+          READY=$(kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller -o jsonpath='{.items[0].status.containerStatuses[0].ready}')
+          if [ "$READY" == "true" ]; then
+            echo "Ingress Controller is ready!"
+            break
+          fi
+          echo "Still waiting... ($i)"
+          sleep 10
+        done
+        echo "Ingress Controller startup complete."
+
+    - name: Apply Ingress Resource
+      run: |
         kubectl apply -f k8s/ingress.yaml
-        sleep 15
+        sleep 10
 
     - name: Install ngrok and expose Ingress
       run: |
@@ -62,10 +75,11 @@ jobs:
         sleep 5
         ngrok http 80 > ngrok.log &
         sleep 10
-        echo "Public URL:"
+        echo "Public URL (via ngrok):"
         curl -s localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url'
 
-    - name: Show Ingress and Pods
+    - name: Show Resources
       run: |
-        kubectl get ingress
-        kubectl get pods
+        kubectl get pods -A
+        kubectl get svc -A
+        kubectl get ingress -A
