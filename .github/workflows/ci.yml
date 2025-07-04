@@ -61,10 +61,17 @@ jobs:
         sleep 5
         curl http://localhost:8080
 
-    - name: Display Pods and nodes
+    - name: Display Deployments, Namespaces, Nodes, and Pods
       run: |
-        echo "Display deployemnt"
-        kubectl get deployment
-        Kubectl get ns
-        kubectl get nodes
-        kubectl get pods       
+         echo "Displaying Deployments:"
+         kubectl get deployment
+
+         echo "Displaying Namespaces:"
+         kubectl get ns
+
+         echo "Displaying Nodes:"
+         kubectl get nodes
+
+         echo "Displaying Pods:"
+         kubectl get pods
+     
