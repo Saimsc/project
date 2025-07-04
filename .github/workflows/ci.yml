@@ -81,5 +81,26 @@ jobs:
         sleep 5
         echo "Response from application:"
         curl -s http://localhost:8080
-     
-     
+ 
+    - name: Install NGINX Ingress Controller
+      run: |
+       kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/kind/deploy.yaml
+       echo "Waiting for ingress controller to be ready..."
+       kubectl wait --namespace ingress-nginx \
+       --for=condition=ready pod \
+       --selector=app.kubernetes.io/component=controller \
+       --timeout=90s
+    - name: Access Spring Boot App via Ingress
+      run: |
+       echo "Testing via Ingress:"
+       curl -s -H "Host: springboot.local" http://localhost
+    
+
+    - name: Deploy App with Ingress and Health Checks
+      run: |
+       kubectl apply -f k8s/deployment.yaml
+       kubectl apply -f k8s/service.yaml
+       kubectl apply -f k8s/ingress.yaml   
+       kubectl get ingress
+
+       

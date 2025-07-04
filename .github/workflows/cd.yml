@@ -1,0 +1,73 @@
+name: Spring Boot CI/CD with kind and ngrok
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Build with Maven
+      run: mvn clean package -DskipTests
+
+    - name: Install kind
+      run: |
+        curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.22.0/kind-linux-amd64
+        chmod +x ./kind
+        sudo mv ./kind /usr/local/bin/kind
+
+    - name: Create kind cluster
+      run: kind create cluster --wait 60s
+
+    - name: Install kubectl
+      run: |
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x kubectl
+        sudo mv kubectl /usr/local/bin/
+
+    - name: Build Docker image
+      run: docker build -t demo:latest .
+
+    - name: Load Docker image into kind
+      run: kind load docker-image demo:latest
+
+    - name: Deploy App and Ingress
+      run: |
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
+        kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/kind/deploy.yaml
+        kubectl wait --namespace ingress-nginx \
+          --for=condition=ready pod \
+          --selector=app.kubernetes.io/component=controller \
+          --timeout=90s
+        kubectl apply -f k8s/ingress.yaml
+        sleep 15
+
+    - name: Install ngrok and expose Ingress
+      run: |
+        curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+        echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+        sudo apt update && sudo apt install ngrok -y
+        kubectl port-forward --namespace ingress-nginx service/ingress-nginx-controller 80:80 &
+        sleep 5
+        ngrok http 80 > ngrok.log &
+        sleep 10
+        echo "Public URL:"
+        curl -s localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url'
+
+    - name: Show Ingress and Pods
+      run: |
+        kubectl get ingress
+        kubectl get pods
