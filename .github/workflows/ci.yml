@@ -1,8 +1,7 @@
 name: Spring Boot CI/CD with kind
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:

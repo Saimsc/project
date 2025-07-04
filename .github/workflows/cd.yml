@@ -1,8 +1,6 @@
 name: Spring Boot CI/CD with kind and ngrok
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
