@@ -74,4 +74,12 @@ jobs:
 
          echo "Displaying Pods:"
          kubectl get pods
+    - name: Port Forward and Test App
+      run: |
+        POD_NAME=$(kubectl get pods -l app=demo -o jsonpath="{.items[0].metadata.name}")
+        kubectl port-forward pod/$POD_NAME 8080:8080 &
+        sleep 5
+        echo "Response from application:"
+        curl -s http://localhost:8080
+     
      
