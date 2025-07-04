@@ -61,10 +61,22 @@ jobs:
         done
         echo "Ingress Controller startup complete."
 
+    - name: Wait for Ingress Admission Webhook
+      run: |
+        echo "Waiting for admission webhook to be available..."
+        for i in {1..30}; do
+          STATUS=$(kubectl get validatingwebhookconfigurations.admissionregistration.k8s.io ingress-nginx-admission -o jsonpath='{.webhooks[0].clientConfig.service.name}' || true)
+          if [ "$STATUS" == "ingress-nginx-controller-admission" ]; then
+            echo "Webhook is ready."
+            break
+          fi
+          echo "Webhook not ready yet... ($i)"
+          sleep 5
+        done
+
     - name: Apply Ingress Resource
       run: |
         kubectl apply -f k8s/ingress.yaml
-        sleep 10
 
     - name: Install ngrok and expose Ingress
       run: |
