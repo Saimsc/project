@@ -18,6 +18,9 @@ jobs:
       codeql: ${{ steps.config.outputs.codeql }}
       deploy: ${{ steps.config.outputs.deploy }}
       image_tag: ${{ steps.meta.outputs.tag }}
+      image_name: ${{ steps.set-values.outputs.image_name }}
+      fallback_image: ${{ steps.set-values.outputs.fallback_image }}
+      helm_release_name: ${{ steps.set-values.outputs.helm_release_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,6 +36,10 @@ jobs:
           echo "build_docker=$(jq -r '.build_docker' config.json)" >> $GITHUB_OUTPUT
           echo "codeql=$(jq -r '.codeql' config.json)" >> $GITHUB_OUTPUT
           echo "deploy=$(jq -r '.deploy // "false"' config.json)" >> $GITHUB_OUTPUT
+          echo "image_tag=$(jq -r '.image_tag' config.json)" >> $GITHUB_OUTPUT
+          echo "image_name=$(jq -r '.image_name' config.json)" >> $GITHUB_OUTPUT
+          echo "fallback_image=$(jq -r '.fallback_image' config.json)" >> $GITHUB_OUTPUT
+          echo "helm_release_name=$(jq -r '.helm_release_name' config.json)" >> $GITHUB_OUTPUT
 
       # Generate an image tag (based on short commit SHA)
       - name: Generate image tag
@@ -48,6 +55,6 @@ jobs:
       codeql: ${{ needs.get-json-values.outputs.codeql }}
       deploy: ${{ needs.get-json-values.outputs.deploy }}
       image_tag: ${{ needs.get-json-values.outputs.image_tag }}
-      image_name: commitbooking
-      fallback_image: nginx
-      helm_release_name: commitbooking-release
+      image_name: ${{ needs.get-json-values.outputs.image_name }}
+      fallback_image: ${{ needs.get-json-values.outputs.fallback_image }}
+      helm_release_name: ${{ needs.get-json-values.outputs.helm_release_name }}
