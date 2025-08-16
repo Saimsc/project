@@ -36,8 +36,8 @@ jobs:
           echo "build_docker=$(jq -r '.build_docker' config.json)" >> $GITHUB_OUTPUT
           echo "codeql=$(jq -r '.codeql' config.json)" >> $GITHUB_OUTPUT
           echo "deploy=$(jq -r '.deploy // "false"' config.json)" >> $GITHUB_OUTPUT
-          echo "image_tag=$(jq -r '.image_tag' config.json)" >> $GITHUB_OUTPUT
-          echo "image_name=$(jq -r '.image_name' config.json)" >> $GITHUB_OUTPUT
+          echo "image_tag=$(jq -r '.image_tag // "latest"' config.json)" >> $GITHUB_OUTPUT
+          echo "image_name=$(jq -r '.image_name // "myapp"' config.json)" >> $GITHUB_OUTPUT
           echo "fallback_image=$(jq -r '.fallback_image' config.json)" >> $GITHUB_OUTPUT
           echo "helm_release_name=$(jq -r '.helm_release_name' config.json)" >> $GITHUB_OUTPUT
 
