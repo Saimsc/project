@@ -33,6 +33,7 @@ jobs:
       - name: Read config.json
         id: read
         run: |
+          CONFIG_FILE=cicd/config.json
           if [ ! -f config.json ]; then
             echo "config.json not found!"
             exit 1
