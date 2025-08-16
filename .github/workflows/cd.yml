@@ -17,10 +17,10 @@ jobs:
       build_docker: ${{ steps.config.outputs.build_docker }}
       codeql: ${{ steps.config.outputs.codeql }}
       deploy: ${{ steps.config.outputs.deploy }}
-      image_tag: ${{ steps.meta.outputs.tag }}
-      image_name: ${{ steps.set-values.outputs.image_name }}
-      fallback_image: ${{ steps.set-values.outputs.fallback_image }}
-      helm_release_name: ${{ steps.set-values.outputs.helm_release_name }}
+      image_tag: ${{ steps.config.outputs.tag }}
+      image_name: ${{ steps.config.outputs.image_name }}
+      fallback_image: ${{ steps.config.outputs.fallback_image }}
+      helm_release_name: ${{ steps.config.outputs.helm_release_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,9 +42,9 @@ jobs:
           echo "helm_release_name=$(jq -r '.helm_release_name' config.json)" >> $GITHUB_OUTPUT
 
       # Generate an image tag (based on short commit SHA)
-      - name: Generate image tag
-        id: meta
-        run: echo "tag=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+      # - name: Generate image tag
+      #   id: meta
+      #   run: echo "tag=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
 
   run-ci-cd:
     needs: get-json-values
