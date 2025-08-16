@@ -43,10 +43,10 @@ jobs:
         id: read
         run: |
           CONFIG_FILE=cicd/config.json
-          if [ ! -f config.json ]; then
-            echo "config.json not found!"
-            exit 1
-          fi
+          if [ ! -f "$CONFIG_FILE" ]; then
+           echo "$CONFIG_FILE not found!"
+           exit 1
+           fi
           echo "build_code=$(jq -r '.build_code // "false"' config.json)" >> $GITHUB_OUTPUT
           echo "build_docker=$(jq -r '.build_docker // "false"' config.json)" >> $GITHUB_OUTPUT
           echo "codeql=$(jq -r '.codeql // "false"' config.json)" >> $GITHUB_OUTPUT
