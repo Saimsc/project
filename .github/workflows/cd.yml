@@ -3,10 +3,6 @@ name: Spring Boot CI/CD with kind and ngrok
 on:
   workflow_dispatch:
 
-on:
-  push:
-    branches: [ main ]
-
 jobs:
   get-json-values:
     runs-on: ubuntu-latest
