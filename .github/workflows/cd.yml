@@ -1,50 +1,47 @@
-name: Spring Boot CI/CD with kind and ngrok
+name: Main CI/CD
 
 on:
+  push:
+    branches:
+      - dev
   workflow_dispatch:
 
 jobs:
   get-json-values:
     runs-on: ubuntu-latest
     outputs:
-      build_code: ${{ steps.set-values.outputs.build_code }}
-      build_docker: ${{ steps.set-values.outputs.build_docker }}
-      codeql: ${{ steps.set-values.outputs.codeql }}
-      deploy: ${{ steps.set-values.outputs.deploy }}
-      replica_count: ${{ steps.set-values.outputs.replica_count }}
-      autoscaling: ${{ steps.set-values.outputs.autoscaling }}
-      service_type: ${{ steps.set-values.outputs.service_type }}
-      ingress_enabled: ${{ steps.set-values.outputs.ingress_enabled }}
+      build_code: ${{ steps.config.outputs.build_code }}
+      build_docker: ${{ steps.config.outputs.build_docker }}
+      codeql: ${{ steps.config.outputs.codeql }}
+      deploy: ${{ steps.config.outputs.deploy }}
+      image_tag: ${{ steps.meta.outputs.tag }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Parse JSON config
-        id: set-values
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      # Read config.json
+      - name: Read config.json
+        id: config
         run: |
-          config=$(cat cicd/config.json)
-          values=$(cat cicd/values.json)
+          echo "build_code=$(jq -r '.build_code' config.json)" >> $GITHUB_OUTPUT
+          echo "build_docker=$(jq -r '.build_docker' config.json)" >> $GITHUB_OUTPUT
+          echo "codeql=$(jq -r '.codeql' config.json)" >> $GITHUB_OUTPUT
+          echo "deploy=$(jq -r '.deploy // "false"' config.json)" >> $GITHUB_OUTPUT
 
-          echo "build_code=$(echo $config | jq -r .build_code)" >> $GITHUB_OUTPUT
-          echo "build_docker=$(echo $config | jq -r .build_docker)" >> $GITHUB_OUTPUT
-          echo "codeql=$(echo $config | jq -r .codeql)" >> $GITHUB_OUTPUT
-          echo "deploy=$(echo $config | jq -r .deploy)" >> $GITHUB_OUTPUT
-
-          echo "replica_count=$(echo $values | jq -r .replicaCount)" >> $GITHUB_OUTPUT
-          echo "autoscaling=$(echo $values | jq -r .autoscaling.enabled)" >> $GITHUB_OUTPUT
-          echo "service_type=$(echo $values | jq -r .service.type)" >> $GITHUB_OUTPUT
-          echo "ingress_enabled=$(echo $values | jq -r .ingress.enabled)" >> $GITHUB_OUTPUT
+      # Generate an image tag (based on short commit SHA)
+      - name: Generate image tag
+        id: meta
+        run: echo "tag=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
 
   run-ci-cd:
-    uses: Saimsc/cd-template/.github/workflows/cd-main.yml@dev
     needs: get-json-values
+    uses: Saimsc/cd-template/.github/workflows/cd-main.yml@dev
     with:
       build_code: ${{ needs.get-json-values.outputs.build_code }}
       build_docker: ${{ needs.get-json-values.outputs.build_docker }}
       codeql: ${{ needs.get-json-values.outputs.codeql }}
       deploy: ${{ needs.get-json-values.outputs.deploy }}
-      replica_count: ${{ needs.get-json-values.outputs.replica_count }}
-      autoscaling: ${{ needs.get-json-values.outputs.autoscaling }}
-      service_type: ${{ needs.get-json-values.outputs.service_type }}
-      ingress_enabled: ${{ needs.get-json-values.outputs.ingress_enabled }}
-    secrets: inherit
+      image_tag: ${{ needs.get-json-values.outputs.image_tag }}
