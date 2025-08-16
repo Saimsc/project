@@ -26,10 +26,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Debug files
+        run: |
+          echo "Current directory: $PWD"
+          ls -R
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
+      - name: Debug files
+        run: |
+          echo "Current directory: $PWD"
+          ls -R
+          
       - name: Read config.json
         id: read
         run: |
