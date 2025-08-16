@@ -50,10 +50,10 @@ jobs:
     needs: get-json-values
     uses: Saimsc/cd-template/.github/workflows/cd-main.yml@dev
     with:
-      build_code: ${{ needs.get-json-values.outputs.build_code }}
-      build_docker: ${{ needs.get-json-values.outputs.build_docker }}
-      codeql: ${{ needs.get-json-values.outputs.codeql }}
-      deploy: ${{ needs.get-json-values.outputs.deploy }}
+      build_code: ${{ needs.get-json-values.outputs.build_code == 'true' }}
+      build_docker: ${{ needs.get-json-values.outputs.build_docker == 'true' }}
+      codeql: ${{ needs.get-json-values.outputs.codeql == 'true' }}
+      deploy: ${{ needs.get-json-values.outputs.deploy == 'true' }}
       image_tag: ${{ needs.get-json-values.outputs.image_tag }}
       image_name: ${{ needs.get-json-values.outputs.image_name }}
       fallback_image: ${{ needs.get-json-values.outputs.fallback_image }}
