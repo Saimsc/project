@@ -9,6 +9,8 @@ on:
 permissions:
   contents: read
   actions: read
+  packages: read
+  id-token: write
   security-events: write  
 
 jobs:
@@ -42,19 +44,21 @@ jobs:
       - name: Read config.json
         id: read
         run: |
+          json_data=$(cat cicd/config.json)
           CONFIG_FILE=cicd/config.json
           if [ ! -f "$CONFIG_FILE" ]; then
            echo "$CONFIG_FILE not found!"
            exit 1
            fi
-          echo "build_code=$(jq -r '.build_code // "false"' config.json)" >> $GITHUB_OUTPUT
-          echo "build_docker=$(jq -r '.build_docker // "false"' config.json)" >> $GITHUB_OUTPUT
-          echo "codeql=$(jq -r '.codeql // "false"' config.json)" >> $GITHUB_OUTPUT
-          echo "deploy=$(jq -r '.deploy // "false"' config.json)" >> $GITHUB_OUTPUT
-          echo "image_tag=$(jq -r '.image_tag // "latest"' config.json)" >> $GITHUB_OUTPUT
-          echo "image_name=$(jq -r '.image_name // "myapp"' config.json)" >> $GITHUB_OUTPUT
-          echo "fallback_image=$(jq -r '.fallback_image // "nginx"' config.json)" >> $GITHUB_OUTPUT
-          echo "helm_release_name=$(jq -r '.helm_release_name // "demo"' config.json)" >> $GITHUB_OUTPUT
+          
+          echo "build_code=$(echo "$json_data" | jq -r '.build_code')" >> $GITHUB_OUTPUT
+          echo "build_docker=$(echo "$json_data" |jq -r '.build_docker')" >> $GITHUB_OUTPUT
+          echo "codeql=$(echo "$json_data" |jq -r '.codeql')" >> $GITHUB_OUTPUT
+          echo "deploy=$(echo "$json_data" |jq -r '.deploy')" >> $GITHUB_OUTPUT
+          echo "image_tag=$(echo "$json_data" |jq -r '.image_tag ')" >> $GITHUB_OUTPUT
+          echo "image_name=$(echo "$json_data" |jq -r '.image_name')" >> $GITHUB_OUTPUT
+          echo "fallback_image=$(echo "$json_data" |jq -r '.fallback_image')" >> $GITHUB_OUTPUT
+          echo "helm_release_name=$(echo "$json_data" |jq -r '.helm_release_name')" >> $GITHUB_OUTPUT
 
   run-ci-cd:
     needs: get-config
