@@ -36,7 +36,7 @@ jobs:
           echo "ingress_enabled=$(echo $values | jq -r .ingress.enabled)" >> $GITHUB_OUTPUT
 
   run-ci-cd:
-    uses: your-org/ei-app-cicd-template/.github/workflows/cicd-main.yml@v1.2
+    uses: Saimsc/cd-template/.github/workflows/cd-main.yml@dev
     needs: get-json-values
     with:
       build_code: ${{ needs.get-json-values.outputs.build_code }}
