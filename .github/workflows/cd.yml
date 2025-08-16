@@ -60,10 +60,10 @@ jobs:
     needs: get-config
     uses: Saimsc/cd-template/.github/workflows/cd-main.yml@dev
     with:
-      build_code: ${{ needs.get-config.outputs.build_code == 'true' }}
-      build_docker: ${{ needs.get-config.outputs.build_docker == 'true' }}
-      codeql: ${{ needs.get-config.outputs.codeql == 'true' }}
-      deploy: ${{ needs.get-config.outputs.deploy == 'true' }}
+      build_code: ${{ needs.get-config.outputs.build_code }}
+      build_docker: ${{ needs.get-config.outputs.build_docker }}
+      codeql: ${{ needs.get-config.outputs.codeql }}
+      deploy: ${{ needs.get-config.outputs.deploy }}
       image_tag: ${{ needs.get-config.outputs.image_tag }}
       image_name: ${{ needs.get-config.outputs.image_name }}
       fallback_image: ${{ needs.get-config.outputs.fallback_image }}
