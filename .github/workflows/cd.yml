@@ -5,56 +5,56 @@ on:
     branches:
       - dev
   workflow_dispatch:
+
 permissions:
   contents: read
   actions: read
   security-events: write  
+
 jobs:
-  get-json-values:
+  get-config:
     runs-on: ubuntu-latest
     outputs:
-      build_code: ${{ steps.config.outputs.build_code }}
-      build_docker: ${{ steps.config.outputs.build_docker }}
-      codeql: ${{ steps.config.outputs.codeql }}
-      deploy: ${{ steps.config.outputs.deploy }}
-      image_tag: ${{ steps.config.outputs.image_tag }}
-      image_name: ${{ steps.config.outputs.image_name }}
-      fallback_image: ${{ steps.config.outputs.fallback_image }}
-      helm_release_name: ${{ steps.config.outputs.helm_release_name }}
+      build_code: ${{ steps.read.outputs.build_code }}
+      build_docker: ${{ steps.read.outputs.build_docker }}
+      codeql: ${{ steps.read.outputs.codeql }}
+      deploy: ${{ steps.read.outputs.deploy }}
+      image_tag: ${{ steps.read.outputs.image_tag }}
+      image_name: ${{ steps.read.outputs.image_name }}
+      fallback_image: ${{ steps.read.outputs.fallback_image }}
+      helm_release_name: ${{ steps.read.outputs.helm_release_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install jq
-        run: sudo apt-get install -y jq
+        run: sudo apt-get update && sudo apt-get install -y jq
 
-      # Read config.json
       - name: Read config.json
-        id: config
+        id: read
         run: |
-          echo "build_code=$(jq -r '.build_code' config.json)" >> $GITHUB_OUTPUT
-          echo "build_docker=$(jq -r '.build_docker' config.json)" >> $GITHUB_OUTPUT
-          echo "codeql=$(jq -r '.codeql' config.json)" >> $GITHUB_OUTPUT
+          if [ ! -f config.json ]; then
+            echo "config.json not found!"
+            exit 1
+          fi
+          echo "build_code=$(jq -r '.build_code // "false"' config.json)" >> $GITHUB_OUTPUT
+          echo "build_docker=$(jq -r '.build_docker // "false"' config.json)" >> $GITHUB_OUTPUT
+          echo "codeql=$(jq -r '.codeql // "false"' config.json)" >> $GITHUB_OUTPUT
           echo "deploy=$(jq -r '.deploy // "false"' config.json)" >> $GITHUB_OUTPUT
           echo "image_tag=$(jq -r '.image_tag // "latest"' config.json)" >> $GITHUB_OUTPUT
           echo "image_name=$(jq -r '.image_name // "myapp"' config.json)" >> $GITHUB_OUTPUT
-          echo "fallback_image=$(jq -r '.fallback_image' config.json)" >> $GITHUB_OUTPUT
-          echo "helm_release_name=$(jq -r '.helm_release_name' config.json)" >> $GITHUB_OUTPUT
-
-      # Generate an image tag (based on short commit SHA)
-      # - name: Generate image tag
-      #   id: meta
-      #   run: echo "tag=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+          echo "fallback_image=$(jq -r '.fallback_image // "nginx"' config.json)" >> $GITHUB_OUTPUT
+          echo "helm_release_name=$(jq -r '.helm_release_name // "demo"' config.json)" >> $GITHUB_OUTPUT
 
   run-ci-cd:
-    needs: get-json-values
+    needs: get-config
     uses: Saimsc/cd-template/.github/workflows/cd-main.yml@dev
     with:
-      build_code: ${{ needs.get-json-values.outputs.build_code == 'true' }}
-      build_docker: ${{ needs.get-json-values.outputs.build_docker == 'true' }}
-      codeql: ${{ needs.get-json-values.outputs.codeql == 'true' }}
-      deploy: ${{ needs.get-json-values.outputs.deploy == 'true' }}
-      image_tag: ${{ needs.get-json-values.outputs.image_tag }}
-      image_name: ${{ needs.get-json-values.outputs.image_name }}
-      fallback_image: ${{ needs.get-json-values.outputs.fallback_image }}
-      helm_release_name: ${{ needs.get-json-values.outputs.helm_release_name }}
+      build_code: ${{ needs.get-config.outputs.build_code == 'true' }}
+      build_docker: ${{ needs.get-config.outputs.build_docker == 'true' }}
+      codeql: ${{ needs.get-config.outputs.codeql == 'true' }}
+      deploy: ${{ needs.get-config.outputs.deploy == 'true' }}
+      image_tag: ${{ needs.get-config.outputs.image_tag }}
+      image_name: ${{ needs.get-config.outputs.image_name }}
+      fallback_image: ${{ needs.get-config.outputs.fallback_image }}
+      helm_release_name: ${{ needs.get-config.outputs.helm_release_name }}
