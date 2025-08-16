@@ -1,0 +1,6 @@
+{
+  "build_code": "true",
+  "build_docker": "true",
+  "codeql": "false",
+  "deploy": "true"
+}

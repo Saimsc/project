@@ -1,0 +1,32 @@
+{
+  "replicaCount": 2,
+  "image": {
+    "repository": "nginx",
+    "tag": "1.25.1"
+  },
+  "autoscaling": {
+    "enabled": true,
+    "minReplicas": 2,
+    "maxReplicas": 5,
+    "targetCPUUtilizationPercentage": 75
+  },
+  "service": {
+    "type": "ClusterIP",
+    "port": 8080
+  },
+  "ingress": {
+    "enabled": true,
+    "className": "nginx",
+    "hosts": [
+      {
+        "host": "commitbooking.local",
+        "paths": [
+          {
+            "path": "/",
+            "pathType": "Prefix"
+          }
+        ]
+      }
+    ]
+  }
+}
