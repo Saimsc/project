@@ -48,3 +48,6 @@ jobs:
       codeql: ${{ needs.get-json-values.outputs.codeql }}
       deploy: ${{ needs.get-json-values.outputs.deploy }}
       image_tag: ${{ needs.get-json-values.outputs.image_tag }}
+      image_name: commitbooking
+      fallback_image: nginx
+      helm_release_name: commitbooking-release
