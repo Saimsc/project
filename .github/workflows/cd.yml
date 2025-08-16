@@ -17,7 +17,7 @@ jobs:
       build_docker: ${{ steps.config.outputs.build_docker }}
       codeql: ${{ steps.config.outputs.codeql }}
       deploy: ${{ steps.config.outputs.deploy }}
-      image_tag: ${{ steps.config.outputs.tag }}
+      image_tag: ${{ steps.config.outputs.image_tag }}
       image_name: ${{ steps.config.outputs.image_name }}
       fallback_image: ${{ steps.config.outputs.fallback_image }}
       helm_release_name: ${{ steps.config.outputs.helm_release_name }}
