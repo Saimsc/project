@@ -1,6 +1,10 @@
 {
-  "build_code": "true",
-  "build_docker": "true",
-  "codeql": "false",
-  "deploy": "true"
+  "build_code": true,
+  "build_docker": true,
+  "codeql": false,
+  "deploy": true,
+  "image_tag": "v1.0.3",
+  "image_name": "commitbooking",
+  "fallback_image": "nginx",
+  "helm_release_name": "commitbooking-release"
 }
