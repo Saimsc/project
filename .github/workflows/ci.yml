@@ -14,92 +14,145 @@ jobs:
       name: codescan
     name: CodeQL Analysis
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: java
+          queries: security-and-quality
 
-      - name: Build with Maven (for CodeQL DB)
-        run: mvn clean compile -DskipTests
+      # For Maven/Gradle projects, this usually builds automatically
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
 
-      - name: Perform CodeQL Analysis
+      # Produce SARIF files locally so we can parse them
+      - name: Perform CodeQL Analysis (writes SARIF)
+        id: analyze
         uses: github/codeql-action/analyze@v3
-
-  build-and-deploy:
-    needs: codeql-analysis  # Ensure scan runs before deployment
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          output: sarif-results
 
-      - name: Display java version
-        run: java --version    
+      # Parse all SARIF files and fail if there are any results
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Build with Maven
-        run: mvn clean package -DskipTests
-
-      - name: Install kind
+      - name: Fail if CodeQL alerts are present
         run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.22.0/kind-linux-amd64
-          chmod +x ./kind
-          sudo mv ./kind /usr/local/bin/kind
+          set -euo pipefail
+          total=0
+          shopt -s nullglob
+          for f in sarif-results/*.sarif; do
+            # Sum up the "results" entries across SARIF runs
+            c=$(jq '[.runs[].results] | map(length) | add' "$f")
+            if [ "$c" = "null" ]; then c=0; fi
+            total=$((total + c))
+          done
+          echo "Total CodeQL results: $total"
+          if [ "$total" -gt 0 ]; then
+            echo "::error::CodeQL found $total alerts. Failing the job."
+            exit 1
+          fi
 
-      - name: Create kind cluster
-        run: kind create cluster --wait 60s
+      # (Optional) Upload SARIF to the Security tab even if we failed
+      - name: Upload SARIF to code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: sarif-results
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Install kubectl
-        run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          sudo mv kubectl /usr/local/bin/
+  #     - name: Initialize CodeQL
+  #       uses: github/codeql-action/init@v3
+  #       with:
+  #         languages: java
 
-      - name: Build Docker image
-        run: docker build -t demo:latest .
+  #     - name: Build with Maven (for CodeQL DB)
+  #       run: mvn clean compile -DskipTests
 
-      - name: Load Docker image into kind
-        run: kind load docker-image demo:latest
+  #     - name: Perform CodeQL Analysis
+  #       uses: github/codeql-action/analyze@v3
 
-      - name: Deploy to Kubernetes
-        run: |
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/service.yaml
+  # build-and-deploy:
+  #   needs: codeql-analysis  # Ensure scan runs before deployment
+  #   runs-on: ubuntu-latest
 
-      - name: Wait for Pod to be Ready
-        run: |
-          kubectl wait --for=condition=ready pod -l app=demo --timeout=60s
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v3
 
-      - name: Port Forward and Test App
-        run: |
-          POD_NAME=$(kubectl get pods -l app=demo -o jsonpath="{.items[0].metadata.name}")
-          kubectl port-forward pod/$POD_NAME 8080:8080 &
-          sleep 5
-          curl http://localhost:8080
+  #     - name: Set up JDK 17
+  #       uses: actions/setup-java@v3
+  #       with:
+  #         java-version: '17'
+  #         distribution: 'temurin'
 
-      - name: Display Deployments, Namespaces, Nodes, and Pods
-        run: |
-          echo "Displaying Deployments:"
-          kubectl get deployment
+  #     - name: Display java version
+  #       run: java --version    
 
-          echo "Displaying Namespaces:"
-          kubectl get ns
+  #     - name: Build with Maven
+  #       run: mvn clean package -DskipTests
 
-          echo "Displaying Nodes:"
-          kubectl get nodes
+  #     - name: Install kind
+  #       run: |
+  #         curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.22.0/kind-linux-amd64
+  #         chmod +x ./kind
+  #         sudo mv ./kind /usr/local/bin/kind
 
-          echo "Displaying Pods:"
-          kubectl get pods
+  #     - name: Create kind cluster
+  #       run: kind create cluster --wait 60s
+
+  #     - name: Install kubectl
+  #       run: |
+  #         curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+  #         chmod +x kubectl
+  #         sudo mv kubectl /usr/local/bin/
+
+  #     - name: Build Docker image
+  #       run: docker build -t demo:latest .
+
+  #     - name: Load Docker image into kind
+  #       run: kind load docker-image demo:latest
+
+  #     - name: Deploy to Kubernetes
+  #       run: |
+  #         kubectl apply -f k8s/deployment.yaml
+  #         kubectl apply -f k8s/service.yaml
+
+  #     - name: Wait for Pod to be Ready
+  #       run: |
+  #         kubectl wait --for=condition=ready pod -l app=demo --timeout=60s
+
+  #     - name: Port Forward and Test App
+  #       run: |
+  #         POD_NAME=$(kubectl get pods -l app=demo -o jsonpath="{.items[0].metadata.name}")
+  #         kubectl port-forward pod/$POD_NAME 8080:8080 &
+  #         sleep 5
+  #         curl http://localhost:8080
+
+  #     - name: Display Deployments, Namespaces, Nodes, and Pods
+  #       run: |
+  #         echo "Displaying Deployments:"
+  #         kubectl get deployment
+
+  #         echo "Displaying Namespaces:"
+  #         kubectl get ns
+
+  #         echo "Displaying Nodes:"
+  #         kubectl get nodes
+
+  #         echo "Displaying Pods:"
+  #         kubectl get pods
 
 
 
