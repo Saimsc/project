@@ -1,5 +1,4 @@
 name: CI
-
 on:
   workflow_dispatch:
 
@@ -16,9 +15,6 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-
-    - name: Display java version
-      run: java --version    
 
     - name: Build with Maven
       run: mvn clean package -DskipTests
@@ -39,67 +35,48 @@ jobs:
         sudo mv kubectl /usr/local/bin/
 
     - name: Build Docker image
-      run: docker build -t demo:latest .
+      run: docker build -t myapp:V1 .
 
     - name: Load Docker image into kind
-      run: kind load docker-image demo:latest
+      run: kind load docker-image myapp:V1
 
-    - name: Deploy to Kubernetes
+    - name: Deploy Application
       run: |
         kubectl apply -f k8s/deployment.yaml
         kubectl apply -f k8s/service.yaml
 
-    - name: Wait for Pod to be Ready
+    - name: Show Resources
       run: |
-        kubectl wait --for=condition=ready pod -l app=demo --timeout=60s
+        kubectl get pods -A
+        kubectl get svc -A
+        kubectl get ingress -A
+        hostname -i
 
-    - name: Port Forward and Test App
+    - name: Wait for Application Pods
       run: |
-        POD_NAME=$(kubectl get pods -l app=demo -o jsonpath="{.items[0].metadata.name}")
-        kubectl port-forward pod/$POD_NAME 8080:8080 &
-        sleep 5
-        curl http://localhost:8080
+        kubectl wait --for=condition=ready pod -l app=demo --timeout=120s
 
-    - name: Display Deployments, Namespaces, Nodes, and Pods
+    - name: Deploy Prometheus
       run: |
-         echo "Displaying Deployments:"
-         kubectl get deployment
+        echo "Installing Prometheus in kind cluster"
+        kubectl create namespace monitoring
+        kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/main/manifests/setup/prometheus-operator-0alertmanagerCustomResourceDefinition.yaml || true
+        kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/main/manifests/setup/prometheus-operator-0prometheusCustomResourceDefinition.yaml || true
+        kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/main/manifests/
+        echo "Waiting for Prometheus pods..."
+        sleep 60
+        kubectl get pods -n monitoring
 
-         echo "Displaying Namespaces:"
-         kubectl get ns
-
-         echo "Displaying Nodes:"
-         kubectl get nodes
-
-         echo "Displaying Pods:"
-         kubectl get pods
-    - name: Port Forward and Test App
+    - name: Test Prometheus Endpoint
       run: |
-        POD_NAME=$(kubectl get pods -l app=demo -o jsonpath="{.items[0].metadata.name}")
-        kubectl port-forward pod/$POD_NAME 8080:8080 &
-        sleep 5
-        echo "Response from application:"
-        curl -s http://localhost:8080
- 
-    - name: Install NGINX Ingress Controller
-      run: |
-       kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/kind/deploy.yaml
-       echo "Waiting for ingress controller to be ready..."
-       kubectl wait --namespace ingress-nginx \
-       --for=condition=ready pod \
-       --selector=app.kubernetes.io/component=controller \
-       --timeout=90s
-    - name: Access Spring Boot App via Ingress
-      run: |
-       echo "Testing via Ingress:"
-       curl -s -H "Host: springboot.local" http://localhost
-    
+        echo "Port-forward Prometheus service to check accessibility"
+        kubectl port-forward -n monitoring svc/prometheus-k8s 9090:9090 &
+        sleep 20
+        curl -v http://localhost:9090
 
-    - name: Deploy App with Ingress and Health Checks
+    - name: Port-forward App and Test
       run: |
-       kubectl apply -f k8s/deployment.yaml
-       kubectl apply -f k8s/service.yaml
-       kubectl apply -f k8s/ingress.yaml   
-       kubectl get ingress
-
-       
+        kubectl port-forward svc/springboot-service 8080:80 &
+        sleep 20
+        echo "Testing the application endpoint"
+        curl -v http://localhost:8080
