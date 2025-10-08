@@ -52,6 +52,10 @@ jobs:
         kubectl get svc -A
         kubectl get ingress -A
         hostname -i
+
+    - name: Wait for pods
+      run: |
+        kubectl wait --for=condition=ready pod -l app=demo --timeout=120s   
     - name: Port-forward Service and Test
       run: |
         # Forward local port 8080 to your service port (NodePort or ClusterIP + port)
