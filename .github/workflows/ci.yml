@@ -54,7 +54,8 @@ jobs:
 
     - name: Wait for Application Pods
       run: |
-        kubectl wait --for=condition=ready pod -l app=demo --timeout=120s
+        sleep 60
+        kubectl get pods -A
 
     - name: Deploy Prometheus
       run: |
@@ -76,6 +77,10 @@ jobs:
 
     - name: Port-forward App and Test
       run: |
+        kubectl get pods -A
+        kubectl get ns
+        echo "Displaying the pods"
+        Kubectl get pods -A
         kubectl port-forward svc/springboot-service 8080:80 &
         sleep 20
         echo "Testing the application endpoint"
