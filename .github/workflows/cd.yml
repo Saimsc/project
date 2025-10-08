@@ -56,6 +56,6 @@ jobs:
       run: |
         # Forward local port 8080 to your service port (NodePort or ClusterIP + port)
         kubectl port-forward svc/springboot-service 8080:80 &
-        sleep 5  # wait for port-forward to start
+        sleep 35  # wait for port-forward to start
         echo "Testing the application endpoint"
         curl -v http://localhost:8080
