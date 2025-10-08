@@ -9,4 +9,18 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8080
-  type: ClusterIP
+      nodePort: 30080  # optional; Kubernetes can auto-assign if you remove this line
+  type: NodePort
+
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: springboot-service
+# spec:
+#   selector:
+#     app: demo
+#   ports:
+#     - protocol: TCP
+#       port: 80
+#       targetPort: 8080
+#   type: ClusterIP
