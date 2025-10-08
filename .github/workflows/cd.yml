@@ -39,7 +39,7 @@ jobs:
       run: docker build -t myap:V1 .
 
     - name: Load Docker image into kind
-      run: kind load docker-image demo:latest
+      run: kind load docker-image myapp:V1
 
     - name: Deploy App and Ingress
       run: |
