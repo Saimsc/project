@@ -36,7 +36,7 @@ jobs:
         sudo mv kubectl /usr/local/bin/
 
     - name: Build Docker image
-      run: docker build -t myap:V1 .
+      run: docker build -t myapp:V1 .
 
     - name: Load Docker image into kind
       run: kind load docker-image myapp:V1
