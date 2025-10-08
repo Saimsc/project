@@ -45,55 +45,10 @@ jobs:
       run: |
         kubectl apply -f k8s/deployment.yaml
         kubectl apply -f k8s/service.yaml
-        kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/kind/deploy.yaml
-
-    - name: Wait Until Ingress Controller Is Ready
-      run: |
-        echo "Waiting for ingress-nginx controller to be ready..."
-        for i in {1..30}; do
-          READY=$(kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller -o jsonpath='{.items[0].status.containerStatuses[0].ready}')
-          if [ "$READY" == "true" ]; then
-            echo "Ingress Controller is ready!"
-            break
-          fi
-          echo "Still waiting... ($i)"
-          sleep 10
-        done
-        echo "Ingress Controller startup complete."
-
-    - name: Wait for Ingress Admission Webhook to Accept Connections
-      run: |
-        echo "Waiting for webhook service to accept connections..."
-        for i in {1..60}; do
-          HOST=$(kubectl get svc -n ingress-nginx ingress-nginx-controller-admission -o jsonpath='{.spec.clusterIP}')
-          PORT=$(kubectl get svc -n ingress-nginx ingress-nginx-controller-admission -o jsonpath='{.spec.ports[0].port}')
-          if timeout 2 bash -c "</dev/tcp/$HOST/$PORT" 2>/dev/null; then
-            echo "Webhook service is accepting connections!"
-            break
-          else
-            echo "Waiting for webhook service to be ready... ($i)"
-            sleep 5
-          fi
-        done
-
-    - name: Apply Ingress Resource
-      run: |
-        kubectl apply -f k8s/ingress.yaml
-
-    - name: Install ngrok and expose Ingress
-      run: |
-        curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
-        echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
-        sudo apt update && sudo apt install ngrok -y
-        kubectl port-forward --namespace ingress-nginx service/ingress-nginx-controller 80:80 &
-        sleep 5
-        ngrok http 80 > ngrok.log &
-        sleep 10
-        echo "Public URL (via ngrok):"
-        curl -s localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url'
 
     - name: Show Resources
       run: |
         kubectl get pods -A
         kubectl get svc -A
         kubectl get ingress -A
+        hostname -i
